@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
-info_raw=$(fastfetch --logo none --pipe --display-key-width 12 | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
+info_raw=$(fastfetch --logo none --pipe | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 mapfile -t sys_info <<< "$info_raw"
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)
