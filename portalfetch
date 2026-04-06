@@ -10,25 +10,25 @@ mapfile -t quote_lines < <(echo "$quote" | fold -s -w 42)
 
 # 3. The exact Aperture Science Logo
 mapfile -t logo_lines << 'EOF'
-              .,-:;//;:=,
-          . :H@@@MM@M#H/.,+%;,
-       ,/X+ +M@@M@MM%=,-%HMMM@X/,
+             .,-:;//;:=,
+         . :H@@@MM@M#H/.,+%;,
+      ,/X+ +M@@M@MM%=,-%HMMM@X/,
      -+@MM; $M@@MH+-,;XMMMM@MMMM@+-
     ;@M@@M- XM@X;. -+XXXXXHHH@M@M#@/.
-  ,%MM@@MH ,@%=             .---=-=:=,.
-  =@#@@@MX.,                -%HX$$%%%+;
- =-./@M@M$                   .;@MMMM@MM:
- X@/ -$MM/                    . +MM@@@M$
-,@M@H: :@:                    . =X#@@@@-
+  ,%MM@@MH ,@%=            .---=-=:=,.
+  -@#@@@MX .,              -%HX$$%%%+;
+ =-./@M@M$                  .;@MMMM@MM:
+ X@/ -$MM/                    .+MM@@@M$
+,@M@H: :@:                    . -X#@@@@-
 ,@@@MMX, .                    /H- ;@M@M=
 .H@@@@M@+,                    %MM+..%#$.
- /MMMM@MMH/.                  XM@MH; =;
+ /MMMM@MMH/.                  XM@MH; -;
   /%+%$XHH@$=              , .H@@@@MX,
    .=--------.           -%H.,@@@@@MX,
-   .%MM@@@HHHXX$$$%+- .:$MMX =M@@MM%.
+   .%MM@@@HHHXX$$$%+- .:$MMX -M@@MM%.
      =XMMM@MM@MM#H;,-+HMM@M+ /MMMX=
        =%@M@M#@$-.=$@MM@@@M; %M%=
-         ,:+$+-,/H#MMMMMMM@= =,
+         ,:+$+-,/H#MMMMMMM@- -,
                =++%%%%+/:-.
 EOF
 
