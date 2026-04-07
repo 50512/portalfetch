@@ -2,10 +2,11 @@
 echo "Installing portalfetch..."
 
 # Create config directory if it doesn't exist
-mkdir -p ~/.config/fastfetch
+sudo mkdir -p /usr/local/share/portalfetch
 
 # Copy the quotes database
-cp quotes.txt ~/.config/fastfetch/
+sudo cp quotes.txt /usr/local/share/portalfetch/
+sudo cp -r logos/ /usr/local/share/portalfetch/logos/
 
 # Install the executable script globally
 sudo cp portalfetch /usr/local/bin/portalfetch
