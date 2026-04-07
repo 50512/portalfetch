@@ -1,36 +1,69 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+if [[ -d "$SCRIPT_DIR/logos" && -f "$SCRIPT_DIR/quotes.txt" ]]; then
+    # Dev environment
+    ASSETS_DIR="$SCRIPT_DIR"
+else
+    # Prod environment
+    ASSETS_DIR="/usr/local/share/portalfetch"
+fi
+
+# Set dir variables
+LOGO_DIR="$ASSETS_DIR/logos"
+QUOTES_FILE="$ASSETS_DIR/quotes.txt"
+
+SELECTED_LOGO=""
+
+# Read positional arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -l|--logo)
+            SELECTED_LOGO="$2"
+            echo $SELECTED_LOGO
+            shift # Next argument
+            ;;
+        *)
+            echo "Parámetro desconocido: $1"
+            exit 1
+            ;;
+    esac
+    shift # Next
+done
+
+# Choose a random logo or use selected logo of the flag
+if [[ -n "$SELECTED_LOGO" ]]; then
+    # If use flag
+    CHOSEN_LOGO="$LOGO_DIR/$SELECTED_LOGO.txt"
+    if [[ ! -f "$CHOSEN_LOGO" ]]; then
+        echo "Error: The logo '$SELECTED_LOGO' doesn't exist $LOGO_DIR"
+        exit 1
+    fi
+else
+    # Use random logo
+    LOGOS=("$LOGO_DIR"/*.txt)
+    TOTAL_LOGOS=${#LOGOS[@]}
+
+    if [[ $TOTAL_LOGOS -eq 0 ]]; then
+        echo "Error: Not found files in $LOGO_DIR"
+        exit 1
+    fi
+
+    RANDOM_INDEX=$((RANDOM % TOTAL_LOGOS))
+    CHOSEN_LOGO="${LOGOS[$RANDOM_INDEX]}"
+fi
+
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
 info_raw=$(fastfetch --logo none --pipe | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 mapfile -t sys_info <<< "$info_raw"
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)
-quote=$(shuf -n 1 ~/.config/fastfetch/quotes.txt)
+quote=$(shuf -n 1 "$QUOTES_FILE")
 mapfile -t quote_lines < <(echo "$quote" | fold -s -w 42)
 
 # 3. The exact Aperture Science Logo
-mapfile -t logo_lines << 'EOF'
-             .,-:;//;:=,
-         . :H@@@MM@M#H/.,+%;,
-      ,/X+ +M@@M@MM%=,-%HMMM@X/,
-     -+@MM; $M@@MH+-,;XMMMM@MMMM@+-
-    ;@M@@M- XM@X;. -+XXXXXHHH@M@M#@/.
-  ,%MM@@MH ,@%=            .---=-=:=,.
-  -@#@@@MX .,              -%HX$$%%%+;
- =-./@M@M$                  .;@MMMM@MM:
- X@/ -$MM/                    .+MM@@@M$
-,@M@H: :@:                    . -X#@@@@-
-,@@@MMX, .                    /H- ;@M@M=
-.H@@@@M@+,                    %MM+..%#$.
- /MMMM@MMH/.                  XM@MH; -;
-  /%+%$XHH@$=              , .H@@@@MX,
-   .=--------.           -%H.,@@@@@MX,
-   .%MM@@@HHHXX$$$%+- .:$MMX -M@@MM%.
-     =XMMM@MM@MM#H;,-+HMM@M+ /MMMX=
-       =%@M@M#@$-.=$@MM@@@M; %M%=
-         ,:+$+-,/H#MMMMMMM@- -,
-               =++%%%%+/:-.
-EOF
+mapfile -t logo_lines < "$CHOSEN_LOGO"
 
 # Portal Amber Color
 ORANGE='\033[38;5;214m'
