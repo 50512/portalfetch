@@ -14,7 +14,18 @@ Unlike standard fastfetch configs that break ASCII borders when system informati
 - **Unbreakable Borders:** Uses a custom rendering script so dynamic data (like changing RAM or Uptime) never misaligns the ASCII walls.
 - **Randomized Quotes:** Features a built in database of quotes from classic games (Portal, Half-Life, Halo) and tech figures. Pulls a new quote every time you run it.
 - **Powered by Fastfetch:** Fast, lightweight, and uses your existing Fastfetch backend to grab accurate system stats.
-- **All ASCII art of the credits:** Select a random ASCII art of the credits of Portal 1 game. [Credits of the ASCII art](https://blog.kazitor.com/2014/12/portal-ascii/)
+- **All ASCII art of the credits:** Select a random ASCII art of the credits of Portal 1 game. [Credits of the ASCII art.](https://blog.kazitor.com/2014/12/portal-ascii/)
+
+## About custom logos
+
+You can select a specific logo from the folder [`./logos`](./logos/), and you can add your custom logos as `txt` files in that folder.
+
+To select a logo, use the flag `-l` or `--logo` with the name of the logo file, without the extension.
+
+```bash
+# Example
+portalfetch -l cake
+```
 
 ## Prerequisites
 
@@ -26,7 +37,7 @@ See: https://github.com/fastfetch-cli/fastfetch on how to install it on your sys
 Clone the repository and run the install script:
 
 ```bash
-git clone https://github.com/ArgSliver/portalfetch.git
+git clone https://github.com/50512/portalfetch.git
 cd portalfetch
 chmod +x install.sh
 ./install.sh
