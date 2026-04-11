@@ -68,7 +68,7 @@ get_terminal_by_tree() {
             echo "OpenSSH (by process)"
             return
         elif [[ "$p_name" == "login" ]]; then
-            echo "TTY"
+            echo "TTY (by process)"
             return
         fi
 
