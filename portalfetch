@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-if [[ -d "$SCRIPT_DIR/logos" && -f "$SCRIPT_DIR/quotes.txt" ]]; then
+if [[ -d "$SCRIPT_DIR/logos" && -f "$SCRIPT_DIR/quotes.txt" && -d "$SCRIPT_DIR/config" ]]; then
     # Dev environment
     ASSETS_DIR="$SCRIPT_DIR"
 else
@@ -13,6 +13,7 @@ fi
 # Set dir variables
 LOGO_DIR="$ASSETS_DIR/logos"
 QUOTES_FILE="$ASSETS_DIR/quotes.txt"
+FASTFETCH_CONF="$ASSETS_DIR/config/fastfetch.jsonc"
 
 SELECTED_LOGO=""
 
@@ -53,51 +54,8 @@ else
     CHOSEN_LOGO="${LOGOS[$RANDOM_INDEX]}"
 fi
 
-TTY_DEVICE=$(tty)
-
-get_terminal_by_tree() {
-    local current_pid=$$ 
-    local last_valid_name="Unknown"
-    
-    while [ "$current_pid" -gt 1 ]; do
-        local ppid=$(ps -o ppid= -p "$current_pid" | tr -d ' ')
-        local p_name=$(ps -o comm= -p "$ppid" | tr -d ' ')
-
-        # Evaluate by whitelist
-        if [[ "$p_name" == "sshd" ]]; then
-            echo "OpenSSH (by process)"
-            return
-        elif [[ "$p_name" == "login" ]]; then
-            echo "TTY (by process)"
-            return
-        fi
-
-        # Ignore system process
-        if [[ "$p_name" != "systemd" && "$p_name" != "init" && "$p_name" != "bash" ]]; then
-            last_valid_name="$p_name"
-        fi
-
-        # Up a level in the process tree
-        current_pid="$ppid"
-    done
-
-    echo "By process: $last_valid_name"
-}
-
-if [[ -n "$TERM_PROGRAM" ]]; then
-    REAL_TERM="$TERM_PROGRAM"
-elif [[ -n "$TERM" ]]; then
-    REAL_TERM="$TERM"
-elif [[ -n "$SSH_CLIENT" ]]; then
-    CLIENT_IP="${SSH_CLIENT%% *}"
-    REAL_TERM="OpenSSH ($CLIENT_IP)"
-else
-    # Fallback: If variables doesn't exists, read the process tree
-    REAL_TERM=$(get_terminal_by_tree)
-fi
-
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
-info_raw=$(fastfetch --logo none --pipe | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | sed -E "s|^Terminal: .*|Terminal: $REAL_TERM\nDevice: $TTY_DEVICE|" | expand)
+info_raw=$(fastfetch --logo none --pipe -c $FASTFETCH_CONF | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 mapfile -t sys_info <<< "$info_raw"
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)
