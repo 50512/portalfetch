@@ -54,6 +54,39 @@ else
     CHOSEN_LOGO="${LOGOS[$RANDOM_INDEX]}"
 fi
 
+# Get real width of a string
+visual_width() {
+    echo -n "$1" | awk '{print length($0)}'
+}
+
+# Pads a string to exactly $2 visual columns.
+pad_visual() {
+    local str="$1"
+    local target="$2"
+    local vw
+    vw=$(visual_width "$str")
+    local spaces=$(( target - vw ))
+    (( spaces < 0 )) && spaces=0
+    printf "%s%*s" "$str" "$spaces" ""
+}
+
+# Trims a string to at most $2 visual columns.
+truncate_visual() {
+    local str="$1"
+    local max="$2"
+    echo -n "$str" | awk -v max="$max" '
+    {
+        out = ""; col = 0
+        n = split($0, chars, "")
+        for (i = 1; i <= n; i++) {
+            col++
+            if (col > max) break
+            out = out chars[i]
+        }
+        printf "%s", out
+    }'
+}
+
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
 info_raw=$(fastfetch -c $FASTFETCH_CONF | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 mapfile -t sys_info <<< "$info_raw"
@@ -65,60 +98,98 @@ mapfile -t quote_lines < <(echo "$quote" | fold -s -w 42)
 # 3. The exact Aperture Science Logo
 mapfile -t logo_lines < "$CHOSEN_LOGO"
 
+# Right pane content width is fixed at 46 (+ divider special case uses 48 with no spaces).
+RIGHT_CONTENT=46      # inner cols for right pane content
+RIGHT_TOTAL=51        # right pane total cols (borders + spaces + content)
+
+# Max left width: widest line in sys_info (measured in visual cols)
+MAX_CONTENT_WIDTH=0
+for line in "${sys_info[@]}"; do
+    w=$(visual_width "$line")
+    (( w > MAX_CONTENT_WIDTH )) && MAX_CONTENT_WIDTH=$w
+done
+
+HEADER_1="Forms FORM-29827281-12:"
+HEADER_2="Fetch Assessment Report"
+
+# Also consider header lines
+for header in $HEADER_1 $HEADER_2; do
+    w=$(visual_width "$header")
+    (( w > MAX_CONTENT_WIDTH )) && MAX_CONTENT_WIDTH=$w
+done
+
+TERM_COLS=$(tput cols 2>/dev/null || echo 99)
+TERM_LINES=$(tput lines 2>/dev/null || echo 40)
+
+LEFT_MAX_BY_TERM=$(( TERM_COLS - RIGHT_TOTAL - 4 ))
+LEFT_HARD_MAX=60
+LEFT_HARD_MIN=30
+
+LEFT_WIDTH=$MAX_CONTENT_WIDTH
+(( LEFT_WIDTH > LEFT_HARD_MAX     )) && LEFT_WIDTH=$LEFT_HARD_MAX
+(( LEFT_WIDTH > LEFT_MAX_BY_TERM  )) && LEFT_WIDTH=$LEFT_MAX_BY_TERM
+(( LEFT_WIDTH < LEFT_HARD_MIN     )) && LEFT_WIDTH=$LEFT_HARD_MIN
+
+# Total frame width: "| " + LEFT + " | " + RIGHT_CONTENT + " |"
+#   borders/separators: | (1) + space (1) + LEFT_WIDTH + space (1) + | (1) + space (1) + RIGHT_CONTENT + space (1) + | (1) = LEFT_WIDTH + 7 + RIGHT_CONTENT
+FRAME_WIDTH=$(( LEFT_WIDTH + RIGHT_CONTENT + 7 ))
+
+# Total lines: 3 header rows + sys_info rows
+LEFT_CONTENT_LINES=$(( ${#sys_info[@]} + 2 ))
+
+# Right pane lines: quotes (max 5) + 1 divider + logo lines
+RIGHT_CONTENT_LINES=$(( 6 + ${#logo_lines[@]} ))
+
+# Total lines is the taller of the two panes
+TOTAL_LINES=$(( LEFT_CONTENT_LINES > RIGHT_CONTENT_LINES ? LEFT_CONTENT_LINES : RIGHT_CONTENT_LINES ))
+
+# Clamp to terminal height (leave 2 rows for top/bottom borders + 1 breathing room)
+MAX_LINES=$(( TERM_LINES - 3 ))
+(( TOTAL_LINES > MAX_LINES )) && TOTAL_LINES=$MAX_LINES
+
 # Portal Amber Color
 ORANGE='\033[38;5;214m'
 NC='\033[0m'
 
-# Draw Top Border
-echo -e "${ORANGE}---------------------------------------------------------------------------------------------------${NC}"
+# Top border (exact frame width)
+BORDER=$(printf '%*s' "$FRAME_WIDTH" '' | tr ' ' '-')
+echo -e "${ORANGE}${BORDER}${NC}"
 
-# Draw the 27 lines of the UI
-for i in {0..26}; do
-    
-    # --- LEFT PANE (System Info) ---
-    if [ $i -eq 0 ]; then
-        left="Forms FORM-29827281-12:"
-    elif [ $i -eq 1 ]; then
-        left="Fetch Assessment Report"
-    elif [ $i -ge 2 ] && [ $((i-2)) -lt ${#sys_info[@]} ]; then
-        left="${sys_info[$((i-2))]}"
-    else
-        left=""
+for (( i=0; i<TOTAL_LINES; i++ )); do
+
+    # --- LEFT PANE ---
+    if   (( i == 0 )); then left=$HEADER_1
+    elif (( i == 1 )); then left=$HEADER_2
+    elif (( i >= 2 && i-2 < ${#sys_info[@]} )); then left="${sys_info[$((i-2))]}"
+    else left=""
     fi
 
-    # Truncate to 46 chars and pad with spaces
-    left=${left:0:46}
-    printf -v left_padded "%-46s" "$left"
+    left=$(truncate_visual "$left" "$LEFT_WIDTH")
+    left_padded=$(pad_visual "$left" "$LEFT_WIDTH")
 
-    # --- RIGHT PANE (Quotes & Logo) ---
-    if [ $i -lt 5 ]; then
-        if [ $i -lt ${#quote_lines[@]} ]; then
-            right="${quote_lines[$i]}"
-        else
-            right=""
-        fi
-    elif [ $i -eq 5 ]; then
-        # The inner divider
-        right="------------------------------------------------"
+    # --- RIGHT PANE ---
+    if   (( i < 5 && i < ${#quote_lines[@]} )); then right="${quote_lines[$i]}"
+    elif (( i < 5 ));                           then right=""
+    elif (( i == 5 ));                          then right="DIVIDER"
     else
-        logo_idx=$((i-6))
-        if [ $logo_idx -lt ${#logo_lines[@]} ]; then
-            right="${logo_lines[$logo_idx]}"
-        else
-            right=""
+        logo_idx=$(( i - 6 ))
+        if (( logo_idx < ${#logo_lines[@]} ));  then right="${logo_lines[$logo_idx]}"
+        else right=""
         fi
     fi
 
-    # Format the borders
-    right=${right:0:48}
-    if [ $i -eq 5 ]; then
-        printf -v right_padded "%-48s" "$right"
-        echo -e "${ORANGE}| ${left_padded} |${right_padded}|${NC}"
+    # Render line — divider row has special padding (fills full inner width without spaces)
+    if (( i == 5 )); then
+        # Divider spans the full right inner width + the 2 spaces that normally frame content
+        div_width=$(( RIGHT_CONTENT + 2 ))
+        div_line=$(printf '%*s' "$div_width" '' | tr ' ' '-')
+        echo -e "${ORANGE}| ${left_padded} |${div_line}|${NC}"
     else
-        printf -v right_padded "%-46s" "$right"
+        right=$(truncate_visual "$right" "$RIGHT_CONTENT")
+        right_padded=$(pad_visual "$right" "$RIGHT_CONTENT")
         echo -e "${ORANGE}| ${left_padded} | ${right_padded} |${NC}"
     fi
 done
 
-# Draw Bottom Border
-echo -e "${ORANGE}---------------------------------------------------------------------------------------------------${NC}"
+# Bottom border
+echo -e "${ORANGE}${BORDER}${NC}"
