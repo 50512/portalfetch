@@ -139,7 +139,7 @@ function repeat(char, n, string, i) {
 END {
     RIGHT_CONTENT = 46
     RIGHT_TOTAL   = 51
-    LEFT_HARD_MAX = 60
+    LEFT_HARD_MAX = 75
     LEFT_HARD_MIN = 30
 
     HEADER_1 = "Forms FORM-29827281-12:"
