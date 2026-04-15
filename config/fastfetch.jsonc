@@ -84,13 +84,6 @@
     },
     "constants": []
   },
-  "general": {
-    "thread": true,
-    "processingTimeout": 5000,
-    "detectVersion": true,
-    "playerName": "",
-    "dsForceDrm": false
-  },
   "modules": [
     {
       "type": "datetime",
@@ -138,6 +131,9 @@
       "combined": false
     },
     {
+      "type": "break"
+    },
+    {
       "type": "shell"
     },
     {
@@ -163,13 +159,9 @@
       "type": "terminalsize"
     },
     {
-      "type": "terminal",
-      "key": "Terminal (default)"
-    },
-    {
       "type": "command",
       "key": "Terminal (custom)",
-      "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh" // Use get_terminal depends the environment
+      "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh || fastfetch --pipe --logo none --key-type none -s terminal" // Use get_terminal depends the environment
     },
     {
       "type": "command",
@@ -180,6 +172,9 @@
       "type": "command",
       "key": "Device",
       "text": "tty"
+    },
+    {
+      "type": "break"
     },
     {
       "type": "cpu",
@@ -249,6 +244,15 @@
       }
     },
     {
+      "type": "break"
+    },
+    {
+      "type": "wifi"
+    },
+    {
+      "type": "bluetoothradio"
+    },
+    {
       "type": "localip",
       "showIpv4": true,
       "showIpv6": false,
@@ -264,7 +268,22 @@
       "namePrefix": ""
     },
     {
+      "type": "publicip"
+    },
+    {
       "type": "netio"
+    },
+    {
+      "type": "battery",
+      "temp": false,
+      "percent": {
+        "green": 50,
+        "yellow": 20,
+        "type": 0
+      }
+    },
+    {
+      "type": "poweradapter"
     },
     {
       "type": "break"
