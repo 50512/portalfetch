@@ -10,27 +10,45 @@ else
     ASSETS_DIR="/usr/local/share/portalfetch"
 fi
 
-# Set dir variables
-LOGO_DIR="$ASSETS_DIR/logos"
-QUOTES_FILE="$ASSETS_DIR/quotes.txt"
-FASTFETCH_CONF="$ASSETS_DIR/config/fastfetch.jsonc"
-
 SELECTED_LOGO=""
+FASTFETCH_ARGS=()
+PRINT_ALL_LINES=0
 
 # Read positional arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -l|--logo)
             SELECTED_LOGO="$2"
-            shift # Next argument
+            shift 2 # Next argument
+            ;;
+        -c|--config)
+            CONFIG_FILE="$2"
+            shift 2
+            ;;
+        --all-lines)
+            PRINT_ALL_LINES=1
+            shift
+            ;;
+        --)
+            shift
+            FASTFETCH_ARGS=("$@")
+            break
             ;;
         *)
             echo "Unknown flag: $1"
             exit 1
             ;;
     esac
-    shift # Next
 done
+
+# Set dir variables
+LOGO_DIR="$ASSETS_DIR/logos"
+QUOTES_FILE="$ASSETS_DIR/quotes.txt"
+if [[ ! -n "$CONFIG_FILE" ]]; then
+    FASTFETCH_CONF="$ASSETS_DIR/config/default.jsonc"
+else
+    FASTFETCH_CONF="$CONFIG_FILE"
+fi
 
 # Choose a random logo or use selected logo of the flag
 if [[ -n "$SELECTED_LOGO" ]]; then
@@ -56,7 +74,7 @@ fi
 
 # -------- DATA --------
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
-info_raw=$(fastfetch -c "$FASTFETCH_CONF" | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
+info_raw=$(fastfetch -c "$FASTFETCH_CONF" "${FASTFETCH_ARGS[@]}" | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)
 quote=$(shuf -n 1 "$QUOTES_FILE")
@@ -80,10 +98,11 @@ TERM_LINES=$(tput lines 2>/dev/null || echo 40)
     while IFS= read -r line; do printf 'L:%s\n' "$line"; done < "$CHOSEN_LOGO"
     # Force UTF-8 to correct count of chars
 } | LANG=en_US.UTF-8 awk \
-    -v term_cols="$TERM_COLS"   \
+    -v term_cols="$TERM_COLS" \
     -v term_lines="$TERM_LINES" \
-    -v orange="\033[38;5;214m"  \
-    -v nc="\033[0m"             \
+    -v print_all_lines="$PRINT_ALL_LINES" \
+    -v orange="\033[38;5;214m" \
+    -v nc="\033[0m" \
 '
 function pad(string, width, diff, i) {
     diff = width - length(string)
@@ -146,8 +165,10 @@ END {
     right_lines = 6 + nl
     total = (left_lines > right_lines) ? left_lines : right_lines
 
-    max_lines = term_lines - 3
-    if (total > max_lines) total = max_lines
+    if (print_all_lines == 0) {
+        max_lines = term_lines - 3
+        if (total > max_lines) total = max_lines
+    }
 
     # -------- RENDER -------
     border = repeat("-", frame_w)

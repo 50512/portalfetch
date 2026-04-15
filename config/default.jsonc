@@ -9,7 +9,7 @@
     "showErrors": false,
     "disableLinewrap": true,
     "hideCursor": false,
-    "separator": ": ",
+    "separator": " : ",
     "color": {
       "keys": "",
       "title": "",
@@ -159,14 +159,28 @@
       "type": "terminalsize"
     },
     {
+      "type": "terminal",
+      "condition": {
+        "system":"Windows"
+      }
+    },
+    {
       "type": "command",
-      "key": "Terminal (custom)",
-      "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh || fastfetch --pipe --logo none --key-type none -s terminal" // Use get_terminal depends the environment
+      "key": "Terminal",
+      "keyIcon": "",
+      "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh || fastfetch --pipe --logo none --key-type none -s terminal", // Use get_terminal depends the environment
+      "condition": {
+        "!system":"Windows"
+      }
     },
     {
       "type": "command",
       "key": "SSH Client",
-      "text": "./lib/get_ssh_client.sh || /usr/local/share/portalfetch/lib/get_ssh_client.sh" // Use right file
+      "keyIcon": "",
+      "text": "./lib/get_ssh_client.sh || /usr/local/share/portalfetch/lib/get_ssh_client.sh", // Use right file
+      "condition": {
+        "!system":"Windows"
+      }
     },
     {
       "type": "command",
@@ -284,6 +298,9 @@
     },
     {
       "type": "poweradapter"
+    },
+    {
+      "type": "sound"
     },
     {
       "type": "break"
