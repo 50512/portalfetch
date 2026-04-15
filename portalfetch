@@ -25,7 +25,7 @@ while [[ "$#" -gt 0 ]]; do
             shift # Next argument
             ;;
         *)
-            echo "Parámetro desconocido: $1"
+            echo "Unknown flag: $1"
             exit 1
             ;;
     esac
@@ -55,7 +55,7 @@ else
 fi
 
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
-info_raw=$(fastfetch --logo none --pipe -c $FASTFETCH_CONF | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
+info_raw=$(fastfetch -c $FASTFETCH_CONF | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 mapfile -t sys_info <<< "$info_raw"
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)

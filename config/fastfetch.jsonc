@@ -1,38 +1,11 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
   "logo": {
-    "type": "auto",
-    "source": "",
-    "color": {
-      "1": "",
-      "2": "",
-      "3": "",
-      "4": "",
-      "5": "",
-      "6": "",
-      "7": "",
-      "8": "",
-      "9": ""
-    },
-    "width": null,
-    "height": null,
-    "padding": {
-      "top": 0,
-      "left": 0,
-      "right": 4
-    },
-    "printRemaining": true,
-    "preserveAspectRatio": false,
-    "recache": false,
-    "position": "left",
-    "chafa": {
-      "fgOnly": false,
-      "symbols": "block+border+space-wide-inverted"
-    }
+    "type": "none"
   },
   "display": {
     "stat": false,
-    "pipe": false,
+    "pipe": true,
     "showErrors": false,
     "disableLinewrap": true,
     "hideCursor": false,
@@ -152,6 +125,9 @@
       "type": "uptime"
     },
     {
+      "type": "processes"
+    },
+    {
       "type": "packages",
       "disabled": [
         "winget"
@@ -178,20 +154,24 @@
       "type": "font"
     },
     {
-      "type": "terminal"
+      "type": "terminalfont"
+    },
+    {
+      "type": "terminalsize"
+    },
+    {
+      "type": "terminal",
+      "key": "Terminal (default)"
     },
     {
       "type": "command",
-      "key": "Terminal",
+      "key": "Terminal (custom)",
       "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh" // Use get_terminal depends the environment
     },
     {
       "type": "command",
       "key": "Device",
       "text": "tty"
-    },
-    {
-      "type": "terminalfont"
     },
     {
       "type": "cpu",
@@ -211,7 +191,7 @@
     {
       "type": "cpuusage",
       "key": "CPU Usage (Detail)",
-      "format": "Min:{min}|Avg:{avg}|Max:{max}"
+      "format": "Min:{min} | Avg:{avg} | Max:{max}"
     },
     {
       "type": "gpu",
@@ -264,7 +244,7 @@
       "type": "localip",
       "showIpv4": true,
       "showIpv6": false,
-      "showMac": true,
+      "showMac": false,
       "showLoop": false,
       "showPrefixLen": true,
       "showMtu": false,
@@ -274,6 +254,13 @@
       "defaultRouteOnly": true,
       "showAllIps": false,
       "namePrefix": ""
+    },
+    {
+      "type": "netio"
+    },
+    {
+      "type": "weather",
+      "location": "Lima,+San+Miguel,+Pe"
     },
     {
       "type": "locale"
