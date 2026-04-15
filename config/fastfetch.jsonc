@@ -97,6 +97,9 @@
       "key": " "
     },
     {
+      "type": "break"
+    },
+    {
       "type": "title",
       "key": " ",
       "fqdn": false,
@@ -143,9 +146,9 @@
       "preciseRefreshRate": false,
       "order": null
     },
-    {
-      "type": "de"
-    },
+    // {
+    //   "type": "de"
+    // },
     {
       "type": "wm",
       "detectPlugin": true
@@ -167,6 +170,11 @@
       "type": "command",
       "key": "Terminal (custom)",
       "text": "./lib/get_terminal.sh || /usr/local/share/portalfetch/lib/get_terminal.sh" // Use get_terminal depends the environment
+    },
+    {
+      "type": "command",
+      "key": "SSH Client",
+      "text": "./lib/get_ssh_client.sh || /usr/local/share/portalfetch/lib/get_ssh_client.sh" // Use right file
     },
     {
       "type": "command",
@@ -257,6 +265,9 @@
     },
     {
       "type": "netio"
+    },
+    {
+      "type": "break"
     },
     {
       "type": "weather",

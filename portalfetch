@@ -80,10 +80,8 @@ for i in {0..26}; do
         left="Forms FORM-29827281-12:"
     elif [ $i -eq 1 ]; then
         left="Fetch Assessment Report"
-    elif [ $i -eq 2 ]; then
-        left=""
-    elif [ $i -ge 3 ] && [ $((i-3)) -lt ${#sys_info[@]} ]; then
-        left="${sys_info[$((i-3))]}"
+    elif [ $i -ge 2 ] && [ $((i-2)) -lt ${#sys_info[@]} ]; then
+        left="${sys_info[$((i-2))]}"
     else
         left=""
     fi
