@@ -54,142 +54,133 @@ else
     CHOSEN_LOGO="${LOGOS[$RANDOM_INDEX]}"
 fi
 
-# Get real width of a string
-visual_width() {
-    echo -n "$1" | awk '{print length($0)}'
-}
-
-# Pads a string to exactly $2 visual columns.
-pad_visual() {
-    local str="$1"
-    local target="$2"
-    local vw
-    vw=$(visual_width "$str")
-    local spaces=$(( target - vw ))
-    (( spaces < 0 )) && spaces=0
-    printf "%s%*s" "$str" "$spaces" ""
-}
-
-# Trims a string to at most $2 visual columns.
-truncate_visual() {
-    local str="$1"
-    local max="$2"
-    echo -n "$str" | awk -v max="$max" '
-    {
-        out = ""; col = 0
-        n = split($0, chars, "")
-        for (i = 1; i <= n; i++) {
-            col++
-            if (col > max) break
-            out = out chars[i]
-        }
-        printf "%s", out
-    }'
-}
-
+# -------- DATA --------
 # 1. Fetch system info invisibly (stripping colors so we can measure text length)
-info_raw=$(fastfetch -c $FASTFETCH_CONF | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
-mapfile -t sys_info <<< "$info_raw"
+info_raw=$(fastfetch -c "$FASTFETCH_CONF" | sed -r 's/\x1b\[[0-9;]*[a-zA-Z]//g' | expand)
 
 # 2. Grab a random quote and wrap it to fit the box (max 42 chars wide)
 quote=$(shuf -n 1 "$QUOTES_FILE")
-mapfile -t quote_lines < <(echo "$quote" | fold -s -w 42)
-
-# 3. The exact Aperture Science Logo
-mapfile -t logo_lines < "$CHOSEN_LOGO"
-
-# Right pane content width is fixed at 46 (+ divider special case uses 48 with no spaces).
-RIGHT_CONTENT=46      # inner cols for right pane content
-RIGHT_TOTAL=51        # right pane total cols (borders + spaces + content)
-
-# Max left width: widest line in sys_info (measured in visual cols)
-MAX_CONTENT_WIDTH=0
-for line in "${sys_info[@]}"; do
-    w=$(visual_width "$line")
-    (( w > MAX_CONTENT_WIDTH )) && MAX_CONTENT_WIDTH=$w
-done
-
-HEADER_1="Forms FORM-29827281-12:"
-HEADER_2="Fetch Assessment Report"
-
-# Also consider header lines
-for header in $HEADER_1 $HEADER_2; do
-    w=$(visual_width "$header")
-    (( w > MAX_CONTENT_WIDTH )) && MAX_CONTENT_WIDTH=$w
-done
 
 TERM_COLS=$(tput cols 2>/dev/null || echo 99)
 TERM_LINES=$(tput lines 2>/dev/null || echo 40)
 
-LEFT_MAX_BY_TERM=$(( TERM_COLS - RIGHT_TOTAL - 4 ))
-LEFT_HARD_MAX=60
-LEFT_HARD_MIN=30
+# -------- CALC LAYOUT AND RENDER --------
+# Data is fed via stdin using a tagged-line protocol so awk knows which
+# section each line belongs to. Sections:
+#   info_raw lines    -> prefixed with "S:"
+#   quote lines       -> prefixed with "Q:"
+#   CHOSEN_LOGO lines -> prefixed with "L:"
+#
+# All layout math (widths, heights, clamping) and all rendering happens inside
+# awk — zero subprocesses during the render loop.
 
-LEFT_WIDTH=$MAX_CONTENT_WIDTH
-(( LEFT_WIDTH > LEFT_HARD_MAX     )) && LEFT_WIDTH=$LEFT_HARD_MAX
-(( LEFT_WIDTH > LEFT_MAX_BY_TERM  )) && LEFT_WIDTH=$LEFT_MAX_BY_TERM
-(( LEFT_WIDTH < LEFT_HARD_MIN     )) && LEFT_WIDTH=$LEFT_HARD_MIN
+{
+    while IFS= read -r line; do printf 'S:%s\n' "$line"; done <<< "$info_raw"
+    while IFS= read -r line; do printf 'Q:%s\n' "$line"; done < <(echo "$quote" | fold -s -w 42)
+    while IFS= read -r line; do printf 'L:%s\n' "$line"; done < "$CHOSEN_LOGO"
+    # Force UTF-8 to correct count of chars
+} | LANG=en_US.UTF-8 awk \
+    -v term_cols="$TERM_COLS"   \
+    -v term_lines="$TERM_LINES" \
+    -v orange="\033[38;5;214m"  \
+    -v nc="\033[0m"             \
+'
+function pad(string, width, diff, i) {
+    diff = width - length(string)
+    for (i = 0; i < diff; i++) string = string " "
+    return string
+}
 
-# Total frame width: "| " + LEFT + " | " + RIGHT_CONTENT + " |"
-#   borders/separators: | (1) + space (1) + LEFT_WIDTH + space (1) + | (1) + space (1) + RIGHT_CONTENT + space (1) + | (1) = LEFT_WIDTH + 7 + RIGHT_CONTENT
-FRAME_WIDTH=$(( LEFT_WIDTH + RIGHT_CONTENT + 7 ))
+function truncated(string, width, out, i) {
+    if (length(string) <= width) return string
+    out = ""
+    for (i = 1; i <= width; i++) out = out substr(string, i, 1)
+    return out
+}
 
-# Total lines: 3 header rows + sys_info rows
-LEFT_CONTENT_LINES=$(( ${#sys_info[@]} + 2 ))
+function repeat(char, n, string, i) {
+    string = ""
+    for (i = 0; i < n; i++) string = string char
+    return string
+}
 
-# Right pane lines: quotes (max 5) + 1 divider + logo lines
-RIGHT_CONTENT_LINES=$(( 6 + ${#logo_lines[@]} ))
+# -------- INPUT PARSING --------
 
-# Total lines is the taller of the two panes
-TOTAL_LINES=$(( LEFT_CONTENT_LINES > RIGHT_CONTENT_LINES ? LEFT_CONTENT_LINES : RIGHT_CONTENT_LINES ))
+{
+    tag     = substr($0, 1, 2)
+    content = substr($0, 3)
 
-# Clamp to terminal height (leave 2 rows for top/bottom borders + 1 breathing room)
-MAX_LINES=$(( TERM_LINES - 3 ))
-(( TOTAL_LINES > MAX_LINES )) && TOTAL_LINES=$MAX_LINES
+    if      (tag == "S:") { sys[++ns]  = content }
+    else if (tag == "Q:") { quo[++nq]  = content }
+    else if (tag == "L:") { logo[++nl] = content }
+}
 
-# Portal Amber Color
-ORANGE='\033[38;5;214m'
-NC='\033[0m'
+# -------- Layout + rendering --------
 
-# Top border (exact frame width)
-BORDER=$(printf '%*s' "$FRAME_WIDTH" '' | tr ' ' '-')
-echo -e "${ORANGE}${BORDER}${NC}"
+END {
+    RIGHT_CONTENT = 46
+    RIGHT_TOTAL   = 51
+    LEFT_HARD_MAX = 60
+    LEFT_HARD_MIN = 30
 
-for (( i=0; i<TOTAL_LINES; i++ )); do
+    HEADER_1 = "Forms FORM-29827281-12:"
+    HEADER_2 = "Fetch Assessment Report"
 
-    # --- LEFT PANE ---
-    if   (( i == 0 )); then left=$HEADER_1
-    elif (( i == 1 )); then left=$HEADER_2
-    elif (( i >= 2 && i-2 < ${#sys_info[@]} )); then left="${sys_info[$((i-2))]}"
-    else left=""
-    fi
+    # -------- CALC LEFT WIDTH --------
+    max_w = length(HEADER_1)
+    if (length(HEADER_2) > max_w) max_w = length(HEADER_2)
+    for (i = 1; i <= ns; i++) {
+        w = length(sys[i])
+        if (w > max_w) max_w = w
+    }
 
-    left=$(truncate_visual "$left" "$LEFT_WIDTH")
-    left_padded=$(pad_visual "$left" "$LEFT_WIDTH")
+    left_w = max_w
+    if (left_w > LEFT_HARD_MAX)                   left_w = LEFT_HARD_MAX
+    if (left_w > term_cols - RIGHT_TOTAL - 4)     left_w = term_cols - RIGHT_TOTAL - 4
+    if (left_w < LEFT_HARD_MIN)                   left_w = LEFT_HARD_MIN
 
-    # --- RIGHT PANE ---
-    if   (( i < 5 && i < ${#quote_lines[@]} )); then right="${quote_lines[$i]}"
-    elif (( i < 5 ));                           then right=""
-    elif (( i == 5 ));                          then right="DIVIDER"
-    else
-        logo_idx=$(( i - 6 ))
-        if (( logo_idx < ${#logo_lines[@]} ));  then right="${logo_lines[$logo_idx]}"
-        else right=""
-        fi
-    fi
+    frame_w = left_w + RIGHT_CONTENT + 7
 
-    # Render line — divider row has special padding (fills full inner width without spaces)
-    if (( i == 5 )); then
-        # Divider spans the full right inner width + the 2 spaces that normally frame content
-        div_width=$(( RIGHT_CONTENT + 2 ))
-        div_line=$(printf '%*s' "$div_width" '' | tr ' ' '-')
-        echo -e "${ORANGE}| ${left_padded} |${div_line}|${NC}"
-    else
-        right=$(truncate_visual "$right" "$RIGHT_CONTENT")
-        right_padded=$(pad_visual "$right" "$RIGHT_CONTENT")
-        echo -e "${ORANGE}| ${left_padded} | ${right_padded} |${NC}"
-    fi
-done
+    # -------- CALC TOTAL LINES --------
+    left_lines  = ns + 2
+    right_lines = 6 + nl
+    total = (left_lines > right_lines) ? left_lines : right_lines
 
-# Bottom border
-echo -e "${ORANGE}${BORDER}${NC}"
+    max_lines = term_lines - 3
+    if (total > max_lines) total = max_lines
+
+    # -------- RENDER -------
+    border = repeat("-", frame_w)
+    div    = repeat("-", RIGHT_CONTENT + 2)
+
+    printf "%s%s%s\n", orange, border, nc
+
+    for (i = 0; i < total; i++) {
+
+        # Left pane
+        if      (i == 0)      left = HEADER_1
+        else if (i == 1)      left = HEADER_2
+        else if (i - 2 < ns)  left = sys[i - 1]
+        else                  left = ""
+
+        left_cell = pad(truncated(left, left_w), left_w)
+
+        # Right pane
+        if      (i < 5 && i < nq)  right = quo[i + 1]
+        else if (i < 5)             right = ""
+        else if (i == 5)            right = "DIVIDER"
+        else if (i - 6 < nl)       right = logo[i - 5]
+        else                        right = ""
+
+        # Print row
+        if (i == 5) {
+            printf "%s| %s |%s|%s\n", orange, left_cell, div, nc
+        } else {
+            right_cell = pad(truncated(right, RIGHT_CONTENT), RIGHT_CONTENT)
+            printf "%s| %s | %s |%s\n", orange, left_cell, right_cell, nc
+        }
+    }
+
+    printf "%s%s%s\n", orange, border, nc
+}
+'
