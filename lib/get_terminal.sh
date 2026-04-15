@@ -34,8 +34,7 @@ if [[ -n "$TERM_PROGRAM" ]]; then
 elif [[ -n "$TERM" ]]; then
     REAL_TERM="$TERM"
 elif [[ -n "$SSH_CLIENT" ]]; then
-    CLIENT_IP="${SSH_CLIENT%% *}"
-    REAL_TERM="OpenSSH ($CLIENT_IP)"
+    REAL_TERM="OpenSSH"
 else
     # Fallback: If variables doesn't exists, read the process tree
     REAL_TERM=$(get_terminal_by_tree)
