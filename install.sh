@@ -6,9 +6,9 @@ sudo mkdir -p /usr/local/share/portalfetch
 
 # Copy the quotes database
 sudo cp quotes.txt /usr/local/share/portalfetch/
-sudo cp -r logos/ /usr/local/share/portalfetch/logos/
-sudo cp -r lib/ /usr/local/share/portalfetch/lib/
-sudo cp -r config/ /usr/local/share/portalfetch/config/
+sudo cp --parents logos/* /usr/local/share/portalfetch/
+sudo cp --parents lib/* /usr/local/share/portalfetch/
+sudo cp --parents config/* /usr/local/share/portalfetch/
 
 sudo chmod +x /usr/local/share/portalfetch/lib/get_ssh_client.sh
 sudo chmod +x /usr/local/share/portalfetch/lib/get_terminal.sh
