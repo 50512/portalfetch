@@ -75,7 +75,7 @@
     "noBuffer": false,
     "key": {
       "width": 0,
-      "type": "string",
+      "type": "icon",
       "paddingLeft": 0
     },
     "freq": {
