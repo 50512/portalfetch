@@ -12,6 +12,7 @@ sudo cp --parents config/* /usr/local/share/portalfetch/
 
 sudo chmod +x /usr/local/share/portalfetch/lib/get_ssh_client.sh
 sudo chmod +x /usr/local/share/portalfetch/lib/get_terminal.sh
+sudo chmod +x /usr/local/share/portalfetch/lib/get_public_ip.sh
 
 # Install the executable script globally
 sudo cp portalfetch /usr/local/bin/portalfetch

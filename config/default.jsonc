@@ -282,7 +282,19 @@
       "namePrefix": ""
     },
     {
-      "type": "publicip"
+      "type": "publicip",
+      "condition": {
+        "system":"Windows"
+      }
+    },
+    {
+      "type": "command",
+      "key": "Public IP",
+      "keyIcon": "󰩠",
+      "text": "./lib/get_public_ip.sh || /usr/local/share/portalfetch/lib/get_public_ip.sh",
+      "condition": {
+        "!system": "Windows"
+      }
     },
     {
       "type": "netio"
