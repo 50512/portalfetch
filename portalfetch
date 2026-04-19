@@ -97,23 +97,58 @@ TERM_LINES=$(tput lines 2>/dev/null || echo 40)
     while IFS= read -r line; do printf 'Q:%s\n' "$line"; done < <(echo "$quote" | fold -s -w 42)
     while IFS= read -r line; do printf 'L:%s\n' "$line"; done < "$CHOSEN_LOGO"
     # Force UTF-8 to correct count of chars
-} | LANG=en_US.UTF-8 awk \
+} | LC_ALL=C awk \
     -v term_cols="$TERM_COLS" \
     -v term_lines="$TERM_LINES" \
     -v print_all_lines="$PRINT_ALL_LINES" \
     -v orange="\033[38;5;214m" \
     -v nc="\033[0m" \
 '
-function pad(string, width, diff, i) {
-    diff = width - length(string)
+function display_width(string,   tmp, base_chars, cjk_count) {
+    tmp = string
+    cjk_count = gsub(/[\xE3-\xE9][\x80-\xBF][\x80-\xBF]/, "", tmp)
+    gsub(/[\x80-\xBF]/, "", tmp)
+    base_chars = length(tmp)
+    return base_chars + (cjk_count * 2)
+}
+
+function pad(string, width, diff, i, vlen) {
+    vlen = display_width(string)
+    diff = width - vlen
     for (i = 0; i < diff; i++) string = string " "
     return string
 }
 
-function truncated(string, width, out, i) {
-    if (length(string) <= width) return string
+function truncated(string, width,   out, i, char, vlen, char_vlen) {
+    if (display_width(string) <= width) return string
+
     out = ""
-    for (i = 1; i <= width; i++) out = out substr(string, i, 1)
+    vlen = 0
+    # Read char byte by byte
+    for (i = 1; i <= length(string); i++) {
+        char = substr(string, i, 1)
+
+        # If is not a continuation byte
+        if (char !~ /[\x80-\xBF]/) {
+            # Asian character (Kanji/Kana)
+            if (char ~ /[\xE3-\xE9]/) {
+                char_vlen = 2
+            } else {
+                char_vlen = 1
+            }
+            # Check limit with this char
+            if (vlen + char_vlen > width) {
+                break
+            }
+
+            # Add char if there is visual space
+            vlen += char_vlen
+        }
+
+        # Ensamble the char byte by byte
+        out = out char
+    }
+
     return out
 }
 
@@ -145,11 +180,11 @@ END {
     HEADER_1 = "Forms FORM-29827281-12:"
     HEADER_2 = "Fetch Assessment Report"
 
-    # -------- CALC LEFT WIDTH --------
+# -------- CALC LEFT WIDTH --------
     max_w = length(HEADER_1)
     if (length(HEADER_2) > max_w) max_w = length(HEADER_2)
     for (i = 1; i <= ns; i++) {
-        w = length(sys[i])
+        w = display_width(sys[i])
         if (w > max_w) max_w = w
     }
 
