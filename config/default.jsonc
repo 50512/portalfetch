@@ -315,6 +315,12 @@
       "type": "sound"
     },
     {
+      "type": "player"
+    },
+    {
+      "type": "media"
+    },
+    {
       "type": "break"
     },
     {
